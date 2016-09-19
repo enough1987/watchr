@@ -1,0 +1,339 @@
+
+##############################			
+# Price
+# Brand
+# Gender	
+# Movement	
+# Case Size (mm)	
+# Case Material	
+# Crystal	Dial	
+# Gemstone	
+# Bracelet Material	
+# Bracelet Color	
+# Clasp Material	
+# Clasp Type	
+# Year	
+# New/Preowned	
+# Box	Papers	
+# Functions
+#############################
+
+module Spree
+  module Api
+      class SearchController < Spree::Api::BaseController
+
+        attr_reader :search_filter
+
+        def index    
+            #@data = JSON.parse(params[:data]) if params[:data]
+            
+            #Таксон фильтр
+            #@products = Spree::Product.in_taxons(@data.nil? ? "" : @data["checkbox_arr"] )
+            
+            
+    
+            @search_filter = Hash.new
+            @debug = Hash.new
+            
+	        if Spree::Currency.find_by_char_code(params[:currency].upcase).nil?
+		        render :json => {:status => 500, :error => "currency fail"}.to_json	
+		        return
+	        else
+		        Spree.config do |config|
+			        config.currency = params[:currency].upcase
+		        end
+	        end
+
+
+
+            @data = JSON.parse(params[:data]) if params[:data]
+
+
+            @products = search(@data)
+            
+            initialize_filter
+	        prophet
+	        
+            @products.each do |product|
+                set_range(:case_size, product.case_size)
+                set_range(:price, product.price)
+                set_range(:year, product.year)
+            end
+                      		        #render :json => {:status => 500, :error => data_patch(204)}.to_json	
+		        #return
+            
+            
+
+            
+
+            expires_in 15.minutes, public: true
+		    headers['Surrogate-Control'] = "max-age=#{15.minutes}"
+            
+            @products = @products.distinct.page(@data.nil? ? 1 : @data["page"]).per(@data.nil? ? 20 : @data["per_page"])
+		    respond_with(@products, @search_filter, @data, @debug)
+        end
+
+        
+        def initialize_filter
+                
+				
+                
+     			prices = Spree::Price.includes(variant: :product).where(currency: Spree::Config[:currency])
+     			@minimum = (prices.minimum(:amount) || 0).floor.to_i
+				@maximum = (prices.maximum(:amount) || 0).ceil.to_i
+				
+                @boolean = [{'name' => 'Yes', 'value' => true}, {'name' => 'No', 'value' => false} ]
+
+                        @search_filter[:brand] = ["name" => "Brand", "id" => "brand", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 2)]
+
+                        @search_filter[:case_size] = ["name" => "Case Size","id" => "case_size", "type" => "range", "items" => [{'name' => 'min', 'value' => 0}, {'name' => 'max', 'value' => 0} ]] 
+                        @search_filter[:price] = ["name" => "Price","id" => "price", "type" => "range", "items" => [{'name' => 'min', 'value' => 0}, {'name' => 'max', 'value' => 0} ]]
+                        @search_filter[:year] = ["name" => "Year","id" => "year", "type" => "range", "items" =>  [{'name' => 'min', 'value' => 0}, {'name' => 'max', 'value' => 0} ]]
+
+                        @search_filter[:papers] =  ["name" => "Papers","id" => "papers", "type" => "switch", "boolean" => false, "items" => [{'name' => 'Yes', 'value' => true}, {'name' => 'No', 'value' => false} ]]
+                        @search_filter[:box] = ["name" => "Box","id" => "box", "type" => "switch", "boolean" => false, "items" => [{'name' => 'Yes', 'value' => true}, {'name' => 'No', 'value' => false} ]]
+                        @search_filter[:gemstone] =  ["name" => "Gemstone","id" => "gemstone", "type" => "switch", "boolean" => false, "items" =>  [{'name' => 'Yes', 'value' => true}, {'name' => 'No', 'value' => false} ]] 
+                        @search_filter[:preowned] = ["name" => "Preowned","id" => "preowned", "type" => "switch", "boolean" => false, "items" => [{'name' => 'New', 'value' => false}, {'name' => 'Preowned', 'value' => true}]]
+
+                        @search_filter[:gender] = ["name" => "Gender", "id" => "gender" , "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 13)]
+                        @search_filter[:movement] = ["name" => "Movement", "id" => "movement", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 23)]
+                        @search_filter[:case_material] = ["name" => "Case material", "id" => "case_material", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 64)]
+                        @search_filter[:crystal] = ["name" => "Crystal", "id" => "crystal", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 81)]
+                        @search_filter[:dial] = ["name" => "Dial", "id" => "dial", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 86)]
+                        @search_filter[:bracelet_material] =["name" => "Bracelet material", "id" => "bracelet_material", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 110)]
+                        @search_filter[:bracelet_color] = ["name" => "Bracelet color", "id" => "bracelet_color", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 136)]
+                        @search_filter[:clasp_material] = ["name" => "Clasp material", "id" => "clasp_material", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 155)]
+                        @search_filter[:clasp_type] = ["name" => "Clasp type", "id" => "clasp_type", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 168)]
+                        @search_filter[:functions] = ["name" => "Functions", "id" => "functions", "type" => "checkbox", "items" => Spree::Taxon.where(parent_id: 176)]
+					
+						@search_filter.each_key do |key| 
+						i = 0
+						while i < @search_filter[key][0]["items"].size
+							@search_filter[key][0]["items"][i][:count] = 0
+							i += 1
+						end
+					end
+        end
+
+
+        def prophet
+            @search_filter.each do |filter|
+              
+                  filter[1][0]["items"].each do |item| 
+                        if filter[1][0]["id"] == "brand"
+                            
+                            set_count(item.id, delta_search(search(brand_data_patch(item.id)).count, @products.count , item.id))
+                            
+                            
+                            debug("search_result", search(brand_data_patch(item.id)) ,item.id)
+                        else
+                           if filter[1][0]["type"] == "checkbox"
+                            set_count(item.id, id_count(item.id))
+                           end
+                        end                        		
+                    end
+
+   
+
+
+           end
+        end
+
+        def set_count( id, value )
+
+		@search_filter.each_key do |key| 
+						i = 0
+						while i < @search_filter[key][0]["items"].size
+
+						    if (@search_filter[key][0]["items"][i]["id"].to_i == id.to_i)
+                                    @search_filter[key][0]["items"][i][:count] =  value
+                                end
+                            
+                            
+							i += 1
+						end
+			end
+        end
+        
+        def set_range( element, value )
+                value = value.to_i
+                
+                min = @search_filter[element][0]["items"][0]["value"].to_i
+                max = @search_filter[element][0]["items"][1]["value"].to_i
+                
+                if(max <= value)
+                    @search_filter[element][0]["items"][1]["value"] = value
+                    if (min = 0)
+                        @search_filter[element][0]["items"][0]["value"] = value
+                    end
+                    return
+                end
+                
+                if(value <= min)
+                    @search_filter[element][0]["items"][0]["value"] = value
+                    return
+                end
+                
+                if(min <= value) && (value <= max)
+                    return
+                end
+        end
+        
+        def brand_data_patch(taxon_id)
+            data = Hash.new
+            b_tax = Array.new
+            
+            
+             if params[:data]
+             
+                data = JSON.parse(params[:data])
+                data["brand_arr"].each do |x|
+                    b_tax << x
+                end
+            end 
+            
+            b_tax << taxon_id
+            data["brand_arr"] = b_tax.uniq 
+
+            return data
+
+        end
+            
+       
+       def id_count(id)
+            a = 0
+            @products.each do |product|
+                product.taxons.all.each do |list_taxon|
+                    if list_taxon.id == id
+                        a +=1
+                    end
+                end
+            end
+            return a
+       end
+       
+       def debug(key, *value, description)
+       key = key.to_s  + "_" +   description.to_s + "_" + rand(100).to_s
+       @debug[key.to_s] = value
+       end
+       
+       def delta_search(a, b, id)
+       
+       #Когда нечистый поиск и нет брендов выделеных
+       if !@data.nil?
+              if !@data["brand_arr"].nil?
+                  plus= "+"
+                  x = a - b
+                  s = "#{plus}#{x.to_s}" 
+                  return s.to_s
+             end
+       end
+
+
+       #Когда чистый поиск
+       if params[:data].nil? 
+          plus= ""
+          x = a
+       else
+          plus="+"
+          x = b - a
+       end
+       
+       
+       
+       if x > 0
+            s = "#{plus}#{x.to_s}" 
+          else
+            s = x * -1
+            s ="#{s.to_s}"
+       end
+
+         return s.to_s
+          
+       end
+       
+       
+       
+        def search(data)
+
+        products = Spree::Product.in_taxons(data.nil? ? "" : data["brand_arr"] )
+        products = products.in_taxons(data.nil? ? "" : data["checkbox_arr"] )
+
+            if !data.nil? 
+            
+                if !data["range_arr"].nil?
+                    if !data["range_arr"]["price"].nil?
+                    if !data["range_arr"]["price"]["min"].nil?
+            	    products = products.active.price_between(
+                	    data["range_arr"]["price"]["min"].to_i, 
+                	    data["range_arr"]["price"]["max"].to_i,	
+            	    )
+            	    end
+            	    end
+            	   
+            	    
+            	    
+            	    if !data["range_arr"]["case_size"].nil?
+            	    if !data["range_arr"]["case_size"]["min"].nil?
+            	    products = products.where(:case_size => data["range_arr"]["case_size"]["min"].to_i...data["range_arr"]["case_size"]["max"].to_i
+            	    )	
+            	    end
+                    end
+                  
+                       
+                    
+            	    if !data["range_arr"]["year"].nil?
+            	    if !data["range_arr"]["year"]["min"].nil?
+            	    products = products.where(:year => data["range_arr"]["year"]["min"].to_i...data["range_arr"]["year"]["max"].to_i
+            	    )	
+            	    end
+            	    end
+            	  
+            	    
+            	    if !data["range_arr"]["papers"].nil?
+            	    products = products.where(:papers => true )	
+            	    end
+            	    
+            	    if !data["range_arr"]["box"].nil?
+            	    products = products.where(:box => true )	
+            	    end
+            	     
+            	    if !data["range_arr"]["gemstone"].nil?
+            	    products = products.where(:gemstone => true )	
+            	    end
+            	    
+            	    if !data["range_arr"]["preowned"].nil?
+            	    products = products.where(:preowned => true )	
+            	    end
+        	    
+        	    end
+        	    if !data["input"].nil?
+        	    products = products.ransack(@data["input"]).result	
+        	    end
+        	    
+            	if data["sort"] 	
+		            if  data["sort"] == "name_asc"			 
+			            products = products.order("name ASC")
+		            end	
+		            
+		            if  data["sort"] == "name_desc"			 
+			            products = products.order("name DESC")
+		            end
+		            
+		            if data["sort"]  == "price_asc"			 
+				        products = products.active.ascend_by_master_price
+			        end
+			        if data["sort"] == "price_desc"			 
+				        products = products.active.descend_by_master_price
+			        end
+	            end	
+            end
+         return products.uniq
+        end
+
+
+
+      end
+    end
+  end
+

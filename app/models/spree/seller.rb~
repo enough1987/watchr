@@ -1,0 +1,5 @@
+class Spree::Seller < ActiveRecord::Base
+
+
+
+end

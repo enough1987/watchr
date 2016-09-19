@@ -1,0 +1,241 @@
+<div data-hook="admin_product_form_fields">
+
+  <div class="row">
+
+
+
+    <div class="col-md-8" data-hook="admin_product_form_left">      
+    
+       <div data-hook="admin_product_form_tax_category">
+        <%= f.field_container :brand, class: ['form-group'] do %>
+          <%= f.label :brand, raw(Spree.t(:brand) + content_tag(:span, ' *', class: 'required')) %>
+
+          <%= f.collection_select(:brand, @brands, :id, :name, 
+          { include_blank: Spree.t('none') }, 
+          { class: 'select2', disabled: (cannot? :edit, Spree::TaxCategory) }) 
+          %>
+          <%= f.error_message_on :tax_category %>
+        <% end %>
+      </div>
+      <div data-hook="admin_product_form_name">
+        <%= f.field_container :name, class: ['form-group'] do %>
+          <%= f.label :name, raw(Spree.t(:name) + content_tag(:span, ' *', class: 'required')) %>
+          <%= f.text_field :name, class: 'form-control title' %>
+          <%= f.error_message_on :name %>
+        <% end %>
+      </div>
+
+      <div data-hook="admin_product_form_slug">
+        <%= f.field_container :slug, class: ['form-group'] do %>
+          <%= f.label :slug, raw(Spree.t(:slug) + content_tag(:span, ' *', class: "required")) %>
+          <%= f.text_field :slug, class: 'form-control title' %>
+          <%= f.error_message_on :slug %>
+        <% end %>
+      </div>
+
+
+      <div data-hook="admin_product_form_slug">
+        <%= f.field_container :basic_info, class: ['form-group'] do %>
+          <%= f.hidden_field :basic_info, value: "", class: 'form-control title' %>
+        <% end %>
+      </div>
+      <div data-hook="admin_product_form_description">
+        <%= f.field_container :description, class: ['form-group'] do %>
+          <%= f.label :description, Spree.t(:description) %>
+          <%= f.text_area :description, { rows: "#{unless @product.has_variants? then '20' else '13' end}", class: 'form-control' } %>
+          <%= f.error_message_on :description %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="col-md-4" data-hook="admin_product_form_right">
+      <div data-hook="admin_product_form_price">
+        <%= f.field_container :price, class: ['form-group'] do %>
+          <%= f.label :price, raw(Spree.t(:master_price) + content_tag(:span, ' *', class: "required")) %>
+          <%= f.text_field :price, value: number_to_currency(@product.price, unit: ''), class: 'form-control', disabled: (cannot? :update, Spree::Price) %>
+          <%= f.error_message_on :price %>
+        <% end %>
+      </div>
+
+      <div data-hook="admin_product_form_cost_price" class="alpha two columns">
+        <%= f.field_container :cost_price, class: ['form-group'] do %>
+          <%= f.label :cost_price, Spree.t(:cost_price) %>
+          <%= f.text_field :cost_price, value: number_to_currency(@product.cost_price, unit: ''), class: 'form-control' %>
+          <%= f.error_message_on :cost_price %>
+        <% end %>
+      </div>
+
+      <div data-hook="admin_product_form_available_on">
+        <%= f.field_container :available_on, class: ['form-group'] do %>
+          <%= f.label :available_on, Spree.t(:available_on) %>
+          <%= f.error_message_on :available_on %>
+          <%= f.text_field :available_on, value: datepicker_field_value(@product.available_on), class: 'datepicker form-control' %>
+        <% end %>
+      </div>
+
+      <% if @product.has_variants? %>
+        <div data-hook="admin_product_form_multiple_variants" class="well">
+          <%= f.label :skus, Spree.t(:sku).pluralize %>
+          <div class="info marginb">
+            <%= Spree.t(:info_product_has_multiple_skus, count: @product.variants.count) %>
+            <ul class="text_list">
+              <% @product.variants.first(5).each do |variant| %>
+                <li><%= variant.sku %></li>
+              <% end %>
+            </ul>
+            <% if @product.variants.count > 5 %>
+              <em>
+                <%= Spree.t(:info_number_of_skus_not_shown, count: @product.variants.count - 5) %>
+              </em>
+            <% end %>
+          </div>
+          <div class="info-actions">
+            <% if can?(:admin, Spree::Variant) %>
+              <%= link_to_with_icon 'variants', Spree.t(:manage_variants), spree.admin_product_variants_url(@product), class: "btn btn-default" %>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div data-hook="admin_product_form_sku">
+          <%= f.field_container :sku, class: ['form-group'] do %>
+            <%= f.label :sku, Spree.t(:sku) %>
+            <%= f.text_field :sku, size: 16, class: 'form-control' %>
+          <% end %>
+        </div>
+
+
+
+
+        <%# тут были высота ширина масса и прочее %>
+         
+         
+         
+
+
+         
+      <% end %>
+
+
+         
+
+
+      <div data-hook="admin_product_form_shipping_categories">
+        <%= f.field_container :shipping_categories, class: ['form-group'] do %>
+          <%= f.label :shipping_category_id, Spree.t(:shipping_categories) %>
+          <%= f.collection_select(:shipping_category_id, @shipping_categories, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2', disabled: (cannot? :edit, Spree::ShippingCategory) }) %>
+          <%= f.error_message_on :shipping_category %>
+        <% end %>
+      </div>
+
+      <div data-hook="admin_product_form_tax_category">
+        <%= f.field_container :tax_category, class: ['form-group'] do %>
+          <%= f.label :tax_category_id, Spree.t(:tax_category) %>
+          <%= f.collection_select(:tax_category_id, @tax_categories, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2', disabled: (cannot? :edit, Spree::TaxCategory) }) %>
+          <%= f.error_message_on :tax_category %>
+        <% end %>
+      </div>
+    </div>
+
+  </div>
+
+
+        <div class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :case_size, class: ['form-group'] do %>
+              <%= f.label :case_size, Spree.t(:case_size) %>(mm)
+              <%= f.error_message_on :case_size %>
+              <%= f.number_field :case_size, class: 'form-control' %>
+          <% end %>
+        </div>
+        
+        <div class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :gemstone, class: ['form-group'] do %>
+              <%= f.label :gemstone, Spree.t(:gemstone) %> 
+              <%= f.error_message_on :gemstone %>
+              <%= f.check_box   :gemstone, class: 'form-control' %>
+          <% end %>
+        </div>
+
+         <div  class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :year, class: ['form-group'] do %>
+              <%= f.label :year, Spree.t(:year) %>
+              <%= f.error_message_on :year %>
+              <%= f.number_field :year, class: 'form-control' %>
+          <% end %>
+        </div>
+
+         <div  class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :new, class: ['form-group'] do %>
+              <%= f.label :new, Spree.t(:preowned) %>
+              <%= f.error_message_on :new %>
+              <%= f.check_box  :new, class: 'form-control' %>
+          <% end %>
+        </div>
+
+
+         <div  class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :box, class: ['form-group'] do %>
+              <%= f.label :box, Spree.t(:box) %>
+              <%= f.error_message_on :box %>
+              <%= f.check_box  :box, class: 'form-control' %>
+          <% end %>
+        </div>
+
+
+         <div  class="col-md-2" data-hook="admin_product_form_promotionable">
+          <%= f.field_container :papers, class: ['form-group'] do %>
+              <%= f.label :papers, Spree.t(:papers) %>
+              <%= f.error_message_on :papers %>
+              <%= f.check_box  :papers, class: 'form-control' %>
+          <% end %>
+        </div>
+
+<br>
+  <div data-hook="admin_product_form_taxons">
+    <%= f.field_container :taxons, class: ['form-group'] do %>
+      <%= f.label :taxon_ids, Spree.t(:taxons) %>
+
+       <% if can? :modify, Spree::Classification %>
+        <%= f.hidden_field :taxon_ids, value: @product.taxon_ids.join(',') %>
+      <% elsif @product.taxons.any? %>
+        <ul class="text_list">
+          <% @product.taxons.each do |taxon| %>
+            <li><%= taxon.name %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="alert alert-info"><%= Spree.t(:no_resource_found, resource: :taxons) %></div>
+      <% end %>
+
+    <% end %>
+  </div>
+
+
+
+
+  <div data-hook="admin_product_form_meta">
+    <div data-hook="admin_product_form_meta_title">
+      <%= f.field_container :meta_title, class: ['form-group'] do %>
+        <%= f.label :meta_title, Spree.t(:meta_title) %>
+        <%= f.text_field :meta_title, class: 'form-control' %>
+      <% end %>
+    </div>
+
+    <div data-hook="admin_product_form_meta_keywords">
+      <%= f.field_container :meta_keywords, class: ['form-group'] do %>
+        <%= f.label :meta_keywords, Spree.t(:meta_keywords) %>
+        <%= f.text_field :meta_keywords, class: 'form-control' %>
+      <% end %>
+    </div>
+
+    <div data-hook="admin_product_form_meta_description">
+      <%= f.field_container :meta_description, class: ['form-group'] do %>
+        <%= f.label :meta_description, Spree.t(:meta_description) %>
+        <%= f.text_field :meta_description, class: 'form-control' %>
+      <% end %>
+    </div>
+
+    <div data-hook="admin_product_form_additional_fields"></div>
+
+</div>
+  
+</div>

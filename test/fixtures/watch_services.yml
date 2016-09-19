@@ -1,0 +1,27 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  brand: MyString
+  email: MyString
+  model: MyString
+  name: MyString
+  phone: MyString
+  polishing: MyString
+  reference: MyString
+  repair: MyString
+  revision: MyString
+  wristband: MyString
+  servicing: MyString
+
+two:
+  brand: MyString
+  email: MyString
+  model: MyString
+  name: MyString
+  phone: MyString
+  polishing: MyString
+  reference: MyString
+  repair: MyString
+  revision: MyString
+  wristband: MyString
+  servicing: MyString
